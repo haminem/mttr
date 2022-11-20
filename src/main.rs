@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let filename = &args[1];
+    let filename: &String = &args[1];
 
     let mut map = HashMap::new();
     let mut log = String::new();
@@ -19,15 +19,15 @@ fn main() {
         let line: String = line.unwrap();
         // data is [check_date, ip_address, response_time]
         let data: Vec<&str> = line.split(",").collect();
-        let check_date = data[0];
-        let ip_address = data[1];
-        let response_time = data[2];
+        let check_date: &str = data[0];
+        let ip_address: &str = data[1];
+        let response_time: &str = data[2];
         println!("{} {} {}", check_date, ip_address, response_time);
 
         if response_time == "-" {
             //add data to map
-            let key = ip_address.to_string();
-            let value = check_date.to_string();
+            let key: String = ip_address.to_string();
+            let value: String = check_date.to_string();
             map.entry(key).or_insert(value);
         } else {
             for (key, value) in &map {
