@@ -8,9 +8,11 @@ fn main() {
     let filename = &args[1];
 
     let mut map = HashMap::new();
+    let mut log = String::new();
 
     let f = File::open(filename).expect("ファイルが見つかりません");
     let reader = BufReader::new(f);
+
     for line in reader.lines() {
         let line: String = line.unwrap();
         // data is [check_date, ip_address, response_time]
@@ -19,10 +21,22 @@ fn main() {
         let ip_address = data[1];
         let response_time = data[2];
         println!("{} {} {}", check_date, ip_address, response_time);
-        //add data to map
-        let key = ip_address.to_string();
-        let value = check_date.to_string();
-        map.entry(key).or_insert(value);
+
+        if response_time == "-" {
+            //add data to map
+            let key = ip_address.to_string();
+            let value = check_date.to_string();
+            map.entry(key).or_insert(value);
+        } else {
+            for (key, value) in &map {
+                if key == ip_address {
+                    log.push_str(&format!("{} {}~{}\n", ip_address, value, check_date));
+                }
+            }
+            //remove data from map
+            map.remove(ip_address);
+        }
     }
     println!("{:?}", map);
+    println!("{}", log);
 }
