@@ -1,6 +1,6 @@
 use std::env;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Write};
 use std::collections::HashMap;
 
 fn main() {
@@ -12,6 +12,8 @@ fn main() {
 
     let f = File::open(filename).expect("ファイルが見つかりません");
     let reader = BufReader::new(f);
+
+    let mut log1_file = File::create("log1.txt").expect("ログファイル１が作成できません");
 
     for line in reader.lines() {
         let line: String = line.unwrap();
@@ -31,6 +33,7 @@ fn main() {
             for (key, value) in &map {
                 if key == ip_address {
                     log.push_str(&format!("{} {}~{}\n", ip_address, value, check_date));
+                    //write to log1.txt
                 }
             }
             //remove data from map
@@ -39,4 +42,5 @@ fn main() {
     }
     println!("{:?}", map);
     println!("{}", log);
+    log1_file.write_all(log.as_bytes()).expect("ファイルに書き込めません");
 }
