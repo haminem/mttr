@@ -13,7 +13,6 @@ fn main() {
 
     let mut map_timeout: HashMap<String, (String, u32)> = HashMap::new();
     let mut map_response_time: HashMap<String, (String, u32, VecDeque<u32>)> = HashMap::new();
-    let queue_response_time: VecDeque<u32> = VecDeque::new();
 
     let mut log1: String = String::new();
     let mut log2: String = String::new();
@@ -49,13 +48,16 @@ fn main() {
                     }
                     value.1 = 0;
                 });
-            map_response_time
+                map_response_time
                 .entry(ip_address.to_string())
                 .and_modify(|value: &mut (String, u32, VecDeque<u32>)| {
                     value.1 += 1;
+                    //TODO: 冗長さの修正
+                    value.2.push_back(response_time.parse().unwrap());
                     if value.1 >= response_time_average_range {
-                        value.2.pop_front();
-                        value.2.push_back(response_time.parse().unwrap());
+                        if value.1 > response_time_average_range {
+                            value.2.pop_front();
+                        }
                         let sum: u32 = value.2.iter().sum();
                         let average: u32 = sum / response_time_average_range;
                         if average >= response_time_average_capacity {
@@ -63,8 +65,7 @@ fn main() {
                         }
                     }
                 })
-                .or_insert((check_date.to_string(), 1, queue_response_time.clone()));
-            println!("{:?}", map_response_time);
+                .or_insert((check_date.to_string(), 1, VecDeque::from([response_time.parse().unwrap()])));
         }
     }
     println!("{:?}", map_timeout);
