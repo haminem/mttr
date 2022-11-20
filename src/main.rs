@@ -43,6 +43,22 @@ fn main() {
                     }
                     value.1 = 0;
                 });
+            map_response_time
+                .entry(ip_address.to_string())
+                .and_modify(|value: &mut (String, u32, VecDeque<u32>)| {
+                    value.1 += 1;
+                    if value.1 >= response_time_average_range {
+                        value.2.pop_front();
+                        value.2.push_back(response_time.parse().unwrap());
+                        let sum: u32 = value.2.iter().sum();
+                        let average: u32 = sum / response_time_average_range;
+                        if average >= response_time_average_capacity {
+                            log2.push_str(&format!("{} {} {}\n", ip_address, value.0, check_date));
+                        }
+                    }
+                })
+                .or_insert((check_date.to_string(), 1, queue_response_time.clone()));
+                println!("{:?}", map_response_time);
         }
     }
     println!("{:?}", map_timeout);
