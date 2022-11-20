@@ -30,10 +30,6 @@ fn main() {
             if map.contains_key(ip_address) {
                 let value: &mut (String, u32) = map.get_mut(ip_address).unwrap();
                 value.1 += 1;
-                if value.1 >= redundant {
-                    log1.push_str(&format!("{} {} {}\n", ip_address, value.0, check_date));
-                    map.remove(ip_address);
-                }
             } else {
             //add data to map
             let key: String = ip_address.to_string();
