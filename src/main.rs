@@ -8,13 +8,13 @@ fn main() {
     let filename: &String = &args[1];
     let redundant: u32 = args[2].parse().unwrap();
 
-    let mut map = HashMap::new();
-    let mut log1 = String::new();
+    let mut map_timeout: HashMap<String, (String, u32)> = HashMap::new();
+    let mut log1: String = String::new();
 
-    let f = File::open(filename).expect("ファイルが見つかりません");
-    let reader = BufReader::new(f);
+    let f: File = File::open(filename).expect("ファイルが見つかりません");
+    let reader: BufReader<File> = BufReader::new(f);
 
-    let mut log1_file = File::create("log1.txt").expect("ログファイル１が作成できません");
+    let mut log1_file: File = File::create("log1.txt").expect("ログファイル１が作成できません");
 
     for line in reader.lines() {
         let line: String = line.unwrap();
@@ -24,29 +24,21 @@ fn main() {
         let ip_address: &str = data[1];
         let response_time: &str = data[2];
         println!("{} {} {}", check_date, ip_address, response_time);
-
-        //TODO: 条件分岐の冗長性を減らす
         if response_time == "-" {
-            if map.contains_key(ip_address) {
-                let value: &mut (String, u32) = map.get_mut(ip_address).unwrap();
+            map_timeout.entry(ip_address.to_string()).and_modify(|value: &mut (String,u32)| {
                 value.1 += 1;
-            } else {
-            //add data to map
-            let key: String = ip_address.to_string();
-            let value: (String, u32) = (check_date.to_string(), 1);
-            map.entry(key).or_insert(value);
-            }
+            }).or_insert((check_date.to_string(), 1));
         } else {
-            if map.contains_key(ip_address) {
-                let value: &mut (String, u32) = map.get_mut(ip_address).unwrap();
+            map_timeout.entry(ip_address.to_string()).and_modify(|value: &mut (String,u32)| {
                 if value.1 >= redundant {
                     log1.push_str(&format!("{} {} {}\n", ip_address, value.0, check_date));
                 }
-                map.remove(ip_address);
-            }
+                value.1 = 0;
+            });
         }
     }
-    println!("{:?}", map);
+    println!("{:?}", map_timeout);
+    println!("\n");
     println!("{}", log1);
     //write to log1.txt
     log1_file.write_all(log1.as_bytes()).expect("ログファイル1に書き込めません");
