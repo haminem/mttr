@@ -33,7 +33,6 @@ fn main() {
             for (key, value) in &map {
                 if key == ip_address {
                     log.push_str(&format!("{} {}~{}\n", ip_address, value, check_date));
-                    //write to log1.txt
                 }
             }
             //remove data from map
@@ -42,5 +41,6 @@ fn main() {
     }
     println!("{:?}", map);
     println!("{}", log);
+    //write to log1.txt
     log1_file.write_all(log.as_bytes()).expect("ファイルに書き込めません");
 }
