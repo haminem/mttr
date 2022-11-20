@@ -1,8 +1,8 @@
+use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
-use std::collections::HashMap;
-use std::collections::VecDeque;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -33,11 +33,17 @@ fn main() {
         let response_time: &str = data[2];
         println!("{} {} {}", check_date, ip_address, response_time);
         if response_time == "-" {
-            map_timeout.entry(ip_address.to_string()).and_modify(|value: &mut (String,u32)| {
+            map_timeout
+                .entry(ip_address.to_string())
+                .and_modify(|value: &mut (String, u32)| {
                     value.1 += 1;
-            }).or_insert((check_date.to_string(), 1));
+                })
+                .or_insert((check_date.to_string(), 1));
+            map_response_time.remove(ip_address);
         } else {
-            map_timeout.entry(ip_address.to_string()).and_modify(|value: &mut (String,u32)| {
+            map_timeout
+                .entry(ip_address.to_string())
+                .and_modify(|value: &mut (String, u32)| {
                     if value.1 >= redundant {
                         log1.push_str(&format!("{} {} {}\n", ip_address, value.0, check_date));
                     }
@@ -58,7 +64,7 @@ fn main() {
                     }
                 })
                 .or_insert((check_date.to_string(), 1, queue_response_time.clone()));
-                println!("{:?}", map_response_time);
+            println!("{:?}", map_response_time);
         }
     }
     println!("{:?}", map_timeout);
