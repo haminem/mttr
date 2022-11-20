@@ -10,6 +10,7 @@ fn main() {
     let reader = BufReader::new(f);
     for line in reader.lines() {
         let line: String = line.unwrap();
+        // data is [check_date, ip_address, response_time]
         let data: Vec<&str> = line.split(',').collect();
         println!("{} {} {}", data[0], data[1], data[2]);
     }
