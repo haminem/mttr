@@ -52,24 +52,40 @@ fn main() {
         exit(1);
     }
 
-    //map_timeout is HashMap<ip, (check_date, timeout)>
-    let mut map_timeout: HashMap<String, (String, u32)> = HashMap::new();
-    //map_response_time is HashMap<ip, (check_date, response_time_average, response_time_average_queue, is_timeout, pre_date)>
-    let mut map_response_time: HashMap<String, (String, u32, VecDeque<u32>, bool, String)> =
-        HashMap::new();
-    //map_subnet is HashMap<subnet, (map_ip, subnet_timeout_reason, subnet_timeout_reason)>
-    let mut map_subnet: HashMap<String, (HashMap<String, bool>, String, String)> = HashMap::new();
+    struct Timeout {
+        check_date: String,
+        range: u32,
+    }
+    struct Overload {
+        start_date: String,
+        range: u32,
+        queue: VecDeque<u32>,
+        is_timeout: bool,
+        previous_date: String,
+    }
+    struct Down {
+        map_ip: HashMap<String, bool>,
+        start_date: String,
+        check_date: String,
+    }
+    //map_timeout is HashMap<ip, (check_date, range)>
+    let mut map_timeout: HashMap<String, Timeout> = HashMap::new();
+    //map_overload is HashMap<ip, (check_date, range, queue, is_timeout, previous_date)>
+    let mut map_overload: HashMap<String, Overload> = HashMap::new();
+    //map_subnet is HashMap<subnet, (map_ip, start_date, check_date)>
+    let mut map_subnet: HashMap<String, Down> = HashMap::new();
 
     create_dir("result").unwrap_or_default();
-    let mut log1_file: File =
-    File::create("result/log1.txt").expect("Unable to create file log1.txt");
-    let mut log2_file: File =
-    File::create("result/log2.txt").expect("Unable to create file log2.txt");
-    let mut log3_file: File =
-    File::create("result/log3.txt").expect("Unable to create file log3.txt");
-    let mut log1: String = String::new();
-    let mut log2: String = String::new();
-    let mut log3: String = String::new();
+    let mut ttr_server_file: File =
+        File::create("result/ttr_server.txt").expect("Unable to create file ttr_server.txt");
+    let mut overload_file: File =
+        File::create("result/overload.txt").expect("Unable to create file overload.txt");
+    let mut tty_subnet_file: File =
+        File::create("result/tty_subnet.txt").expect("Unable to create file tty_subnet.txt");
+
+    let mut ttr_server_log: String = String::new();
+    let mut overload_log: String = String::new();
+    let mut tty_subnet_log: String = String::new();
 
     let f: File = File::open(filename).expect("Unable to open file");
     let reader: BufReader<File> = BufReader::new(f);
@@ -79,8 +95,12 @@ fn main() {
         let ip_address: &str = data[1];
         map_subnet
             .entry(get_subnet(ip_address))
-            .or_insert((HashMap::new(), String::new(), String::new()))
-            .0
+            .or_insert(Down {
+                map_ip: HashMap::new(),
+                start_date: String::new(),
+                check_date: String::new(),
+            })
+            .map_ip
             .insert(ip_address.to_string(), false);
     }
 
@@ -92,134 +112,138 @@ fn main() {
         let check_date: &str = data[0];
         let ip_address: &str = data[1];
         let response_time: &str = data[2];
+        
         if response_time == "-" {
             map_timeout
                 .entry(ip_address.to_string())
-                .and_modify(|value: &mut (String, u32)| {
-                    value.1 += 1;
+                .and_modify(|timeout: &mut Timeout| {
+                    timeout.range += 1;
                 })
-                .or_insert((check_date.to_string(), 1));
-            map_response_time.remove(ip_address);
+                .or_insert(Timeout {
+                    check_date: check_date.to_string(),
+                    range: 1,
+                });
+            map_overload.remove(ip_address);
             map_subnet
                 .get_mut(&get_subnet(ip_address))
                 .unwrap()
-                .0
+                .map_ip
                 .insert(ip_address.to_string(), true);
         } else {
             map_timeout
                 .entry(ip_address.to_string())
-                .and_modify(|value: &mut (String, u32)| {
-                    if value.1 >= redundant {
-                        log1.push_str(&format!(
+                .and_modify(|timeout: &mut Timeout| {
+                    if timeout.range >= redundant {
+                        ttr_server_log.push_str(&format!(
                             "{} {} ~ {}\n",
                             ip_address,
-                            formatter(&value.0),
+                            formatter(&timeout.check_date),
                             formatter(&check_date.to_string())
                         ));
                     }
-                    value.1 = 0;
+                    timeout.range = 0;
                 });
-            map_response_time
+            map_overload
                 .entry(ip_address.to_string())
-                .and_modify(|value: &mut (String, u32, VecDeque<u32>, bool, String)| {
-                    value.1 += 1;
-                    value.2.push_back(response_time.parse().unwrap());
-                    if value.1 >= response_time_average_range {
-                        if value.1 > response_time_average_range {
-                            value.2.pop_front();
+                .and_modify(|overload: &mut Overload| {
+                    overload.range += 1;
+                    overload.queue.push_back(response_time.parse().unwrap());
+                    if overload.range >= response_time_average_range {
+                        if overload.range > response_time_average_range {
+                            overload.queue.pop_front();
                         }
-                        let sum: u32 = value.2.iter().sum();
+                        let sum: u32 = overload.queue.iter().sum();
                         let average: u32 = sum / response_time_average_range;
                         if average >= response_time_average_capacity {
-                            if !value.3 {
-                                value.0 = check_date.to_string();
+                            if !overload.is_timeout {
+                                overload.start_date = check_date.to_string();
                             }
-                            value.3 = true;
+                            overload.is_timeout = true;
                         }
-                        if average < response_time_average_capacity && value.3 {
-                            log2.push_str(&format!(
+                        if average < response_time_average_capacity && overload.is_timeout {
+                            overload_log.push_str(&format!(
                                 "{} {} ~ {}\n",
                                 ip_address,
-                                formatter(&value.0),
-                                formatter(&value.4)
+                                formatter(&overload.start_date),
+                                formatter(&overload.previous_date)
                             ));
-                            value.3 = false;
+                            overload.is_timeout = false;
                         }
-                        value.4 = check_date.to_string();
+                        overload.previous_date = check_date.to_string();
                     }
                 })
-                .or_insert((
-                    check_date.to_string(),
-                    1,
-                    VecDeque::from([response_time.parse().unwrap()]),
-                    false,
-                    check_date.to_string(),
-                ));
+                .or_insert(Overload {
+                    start_date: check_date.to_string(),
+                    range: 1,
+                    queue: VecDeque::new(),
+                    is_timeout: false,
+                    previous_date: String::new(),
+                });
             map_subnet
                 .get_mut(&get_subnet(ip_address))
                 .unwrap()
-                .0
+                .map_ip
                 .insert(ip_address.to_string(), false);
         }
         //check subnet timeout
-        for (subnet, value) in map_subnet.iter_mut() {
+        for (subnet, down) in map_subnet.iter_mut() {
             let mut is_all_failure: bool = true;
-            for (_ip, status) in value.0.iter() {
+            for (_ip, status) in down.map_ip.iter() {
                 if !*status {
                     is_all_failure = false;
                     break;
                 }
             }
             if is_all_failure {
-                if value.1 == "" {
-                    value.1 = check_date.to_string();
+                if down.start_date == "" {
+                    down.start_date = check_date.to_string();
                 }
-                value.2 = check_date.to_string();
+                down.check_date = check_date.to_string();
             } else {
-                if value.1 != "" {
-                    log3.push_str(&format!(
+                if down.start_date != "" {
+                    tty_subnet_log.push_str(&format!(
                         "{} {} ~ {}\n",
                         subnet,
-                        formatter(&value.1),
-                        formatter(&value.2)
+                        formatter(&down.start_date),
+                        formatter(&down.check_date)
                     ));
-                    value.1 = String::new();
-                    value.2 = String::new();
+                    down.start_date = String::new();
+                    down.check_date = String::new();
                 }
             }
         }
         //response_time_average_range is 1
         if response_time_average_range == 1 {
-            map_response_time.entry(ip_address.to_string()).and_modify(
-                |value: &mut (String, u32, VecDeque<u32>, bool, String)| {
+            map_overload
+                .entry(ip_address.to_string())
+                .and_modify(|overload: &mut Overload| {
                     if response_time.parse::<u32>().unwrap() >= response_time_average_capacity {
-                        if !value.3 {
-                            value.0 = check_date.to_string();
+                        if !overload.is_timeout {
+                            overload.start_date = check_date.to_string();
                         }
-                        value.3 = true;
+                        overload.is_timeout = true;
                     }
-                },
-            );
+                });
         }
     }
-    //end term timeout of response_time
-    map_response_time.iter().for_each(|(key, value)| {
-        if value.3 {
-            log2.push_str(&format!(
+    //end range timeout of overload
+    map_overload.iter().for_each(|(ip_address, overload)| {
+        if overload.is_timeout {
+            overload_log.push_str(&format!(
                 "{} {} ~ {}\n",
-                key,
-                formatter(&value.0),
-                formatter(&value.4)
+                ip_address,
+                formatter(&overload.start_date),
+                formatter(&overload.previous_date)
             ));
         }
     });
-    log1_file
-        .write_all(log1.as_bytes())
-        .expect("Unable to write data to log1.txt");
-    log2_file
-        .write_all(log2.as_bytes())
-        .expect("Unable to write data to log2.txt");
-    log3_file
-        .write_all(log3.as_bytes())
-        .expect("Unable to write data to log3.txt");
+    ttr_server_file
+        .write_all(ttr_server_log.as_bytes())
+        .expect("Unable to write data to ttr_server.txt");
+    overload_file
+        .write_all(overload_log.as_bytes())
+        .expect("Unable to write data to overload.txt");
+    tty_subnet_file
+        .write_all(tty_subnet_log.as_bytes())
+        .expect("Unable to write data to tty_subnet.txt");
 }
