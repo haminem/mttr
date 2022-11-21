@@ -117,6 +117,9 @@ fn main() {
             map_timeout
                 .entry(ip_address.to_string())
                 .and_modify(|timeout: &mut Timeout| {
+                    if timeout.range == 0 {
+                        timeout.check_date = check_date.to_string();
+                    }
                     timeout.range += 1;
                 })
                 .or_insert(Timeout {
