@@ -80,12 +80,12 @@ fn main() {
         File::create("result/ttr_server.txt").expect("Unable to create file ttr_server.txt");
     let mut overload_file: File =
         File::create("result/overload.txt").expect("Unable to create file overload.txt");
-    let mut tty_subnet_file: File =
-        File::create("result/tty_subnet.txt").expect("Unable to create file tty_subnet.txt");
+    let mut ttr_subnet_file: File =
+        File::create("result/ttr_subnet.txt").expect("Unable to create file ttr_subnet.txt");
 
     let mut ttr_server_log: String = String::new();
     let mut overload_log: String = String::new();
-    let mut tty_subnet_log: String = String::new();
+    let mut ttr_subnet_log: String = String::new();
 
     let f: File = File::open(filename).expect("Unable to open file");
     let reader: BufReader<File> = BufReader::new(f);
@@ -112,7 +112,7 @@ fn main() {
         let check_date: &str = data[0];
         let ip_address: &str = data[1];
         let response_time: &str = data[2];
-        
+
         if response_time == "-" {
             map_timeout
                 .entry(ip_address.to_string())
@@ -201,7 +201,7 @@ fn main() {
                 down.check_date = check_date.to_string();
             } else {
                 if down.start_date != "" {
-                    tty_subnet_log.push_str(&format!(
+                    ttr_subnet_log.push_str(&format!(
                         "{} {} ~ {}\n",
                         subnet,
                         formatter(&down.start_date),
@@ -243,7 +243,7 @@ fn main() {
     overload_file
         .write_all(overload_log.as_bytes())
         .expect("Unable to write data to overload.txt");
-    tty_subnet_file
-        .write_all(tty_subnet_log.as_bytes())
-        .expect("Unable to write data to tty_subnet.txt");
+    ttr_subnet_file
+        .write_all(ttr_subnet_log.as_bytes())
+        .expect("Unable to write data to ttr_subnet.txt");
 }
