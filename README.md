@@ -32,8 +32,8 @@ ttr_subnet.txt -> サブネット内のすべてのサーバーがn回以上タ�
 ```
 $ vim test/test.txt
 ```
-or
-`test/`直下に`.txt`で配置する
+もしくは
+`test/`直下に`.txt`で配置してください
 ****
 ## テスト
 ```
