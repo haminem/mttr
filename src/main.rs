@@ -21,21 +21,25 @@ fn masker(ip: Ipv4Addr, mask: u32) -> Ipv4Addr {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let filename: &String = &args[1];
+    let filename: &String = &("test/".to_string() + &args[1]);
     let redundant: u32 = args[2].parse().unwrap();
     let response_time_average_range: u32 = args[3].parse().unwrap();
     let response_time_average_capacity: u32 = args[4].parse().unwrap();
 
+    //map_timeout is HashMap<ip, (check_date, timeout)>
     let mut map_timeout: HashMap<String, (String, u32)> = HashMap::new();
+    //map_response_time is HashMap<ip, (check_date, response_time_average, response_time_average_queue, is_timeout, pre_date)>
     let mut map_response_time: HashMap<String, (String, u32, VecDeque<u32>, bool, String)> =
         HashMap::new();
+    //map_subnet is HashMap<subnet, (map_ip, subnet_timeout_reason, subnet_timeout_reason)>
+
     let mut map_subnet: HashMap<String, (HashMap<String, bool>, String, String)> = HashMap::new();
     let mut log1: String = String::new();
     let mut log2: String = String::new();
     let mut log3: String = String::new();
-    let mut log1_file: File = File::create("log1.txt").expect("ログファイル１が作成できません");
-    let mut log2_file: File = File::create("log2.txt").expect("ログファイル２が作成できません");
-    let mut log3_file: File = File::create("log3.txt").expect("ログファイル３が作成できません");
+    let mut log1_file: File = File::create("result/log1.txt").expect("ログファイル１が作成できません");
+    let mut log2_file: File = File::create("result/log2.txt").expect("ログファイル２が作成できません");
+    let mut log3_file: File = File::create("result/log3.txt").expect("ログファイル３が作成できません");
 
     let f: File = File::open(filename).expect("ファイルが見つかりません");
     let reader: BufReader<File> = BufReader::new(f);
@@ -58,7 +62,6 @@ fn main() {
         let check_date: &str = data[0];
         let ip_address: &str = data[1];
         let response_time: &str = data[2];
-        println!("{} {} {}", check_date, ip_address, response_time);
         if response_time == "-" {
             map_timeout
                 .entry(ip_address.to_string())
@@ -145,12 +148,6 @@ fn main() {
             log2.push_str(&format!("{} {}~{}\n", key, value.0, value.4));
         }
     });
-    
-    println!("{:?}\n", map_subnet);
-    println!("{:?}\n", map_timeout);
-    println!("{}", log1);
-    println!("{}", log2);
-    println!("{}", log3);
     //write to log1.txt
     log1_file
         .write_all(log1.as_bytes())
