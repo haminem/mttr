@@ -3,6 +3,7 @@ use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::net::Ipv4Addr;
+use std::process::exit;
 
 // date is a string in the format "YYYYMMDDHHMMSS"
 fn formatter(date: &String) -> String {
@@ -36,6 +37,20 @@ fn main() {
     let redundant: u32 = args[2].parse().unwrap();
     let response_time_average_range: u32 = args[3].parse().unwrap();
     let response_time_average_capacity: u32 = args[4].parse().unwrap();
+
+    //validates the input
+    if !filename.ends_with(".txt") {
+        println!("The filename must be a .txt file");
+        exit(1);
+    }
+    if redundant < 1 {
+        println!("The redundant value must be greater than 0");
+        exit(1);
+    }
+    if response_time_average_range < 1 {
+        println!("The response_time_average_range value must be greater than 0");
+        exit(1);
+    }
 
     //map_timeout is HashMap<ip, (check_date, timeout)>
     let mut map_timeout: HashMap<String, (String, u32)> = HashMap::new();
