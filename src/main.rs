@@ -68,6 +68,7 @@ fn main() {
         start_date: String,
         check_date: String,
     }
+
     //map_timeout is HashMap<ip, (check_date, range)>
     let mut map_timeout: HashMap<String, Timeout> = HashMap::new();
     //map_overload is HashMap<ip, (check_date, range, queue, is_timeout, previous_date)>
@@ -87,6 +88,7 @@ fn main() {
     let mut overload_log: String = String::new();
     let mut ttr_subnet_log: String = String::new();
 
+    //set the initial value of the map_subnet
     let f: File = File::open(filename).expect("Unable to open file");
     let reader: BufReader<File> = BufReader::new(f);
     for line in reader.lines() {
@@ -188,6 +190,7 @@ fn main() {
                 .map_ip
                 .insert(ip_address.to_string(), false);
         }
+
         //check subnet timeout
         for (subnet, down) in map_subnet.iter_mut() {
             let mut is_all_failure: bool = true;
@@ -215,6 +218,7 @@ fn main() {
                 }
             }
         }
+
         //response_time_average_range is 1
         if response_time_average_range == 1 {
             map_overload
@@ -229,6 +233,7 @@ fn main() {
                 });
         }
     }
+
     //end range timeout of overload
     map_overload.iter().for_each(|(ip_address, overload)| {
         if overload.is_timeout {
@@ -240,6 +245,7 @@ fn main() {
             ));
         }
     });
+    
     ttr_server_file
         .write_all(ttr_server_log.as_bytes())
         .expect("Unable to write data to ttr_server.txt");
