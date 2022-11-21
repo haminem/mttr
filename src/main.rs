@@ -1,6 +1,6 @@
 use std::collections::{HashMap, VecDeque};
 use std::env;
-use std::fs::File;
+use std::fs::{create_dir, File};
 use std::io::{BufRead, BufReader, Write};
 use std::net::Ipv4Addr;
 use std::process::exit;
@@ -60,15 +60,16 @@ fn main() {
     //map_subnet is HashMap<subnet, (map_ip, subnet_timeout_reason, subnet_timeout_reason)>
     let mut map_subnet: HashMap<String, (HashMap<String, bool>, String, String)> = HashMap::new();
 
+    create_dir("result").unwrap_or_default();
+    let mut log1_file: File =
+    File::create("result/log1.txt").expect("Unable to create file log1.txt");
+    let mut log2_file: File =
+    File::create("result/log2.txt").expect("Unable to create file log2.txt");
+    let mut log3_file: File =
+    File::create("result/log3.txt").expect("Unable to create file log3.txt");
     let mut log1: String = String::new();
     let mut log2: String = String::new();
     let mut log3: String = String::new();
-    let mut log1_file: File =
-        File::create("result/log1.txt").expect("Unable to create file log1.txt");
-    let mut log2_file: File =
-        File::create("result/log2.txt").expect("Unable to create file log2.txt");
-    let mut log3_file: File =
-        File::create("result/log3.txt").expect("Unable to create file log3.txt");
 
     let f: File = File::open(filename).expect("Unable to open file");
     let reader: BufReader<File> = BufReader::new(f);
