@@ -175,9 +175,9 @@ fn main() {
                 .or_insert(Overload {
                     start_date: check_date.to_string(),
                     range: 1,
-                    queue: VecDeque::new(),
+                    queue: VecDeque::from([response_time.parse().unwrap()]),
                     is_timeout: false,
-                    previous_date: String::new(),
+                    previous_date: check_date.to_string(),
                 });
             map_subnet
                 .get_mut(&get_subnet(ip_address))
