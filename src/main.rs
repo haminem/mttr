@@ -30,7 +30,6 @@ fn main() {
     let mut map_response_time: HashMap<String, (String, u32, VecDeque<u32>, bool, String)> =
         HashMap::new();
     let mut map_subnet: HashMap<String, (HashMap<String, bool>, String, String)> = HashMap::new();
-    // map_subnet is HashMap<subnet, (HashMap<ip, bool>, start_date, pre_date)>
     let mut log1: String = String::new();
     let mut log2: String = String::new();
     let mut log3: String = String::new();
@@ -55,7 +54,6 @@ fn main() {
     let reader: BufReader<File> = BufReader::new(f);
     for line in reader.lines() {
         let line: String = line.unwrap();
-        // data is [check_date, ip_address, response_time]
         let data: Vec<&str> = line.split(",").collect();
         let check_date: &str = data[0];
         let ip_address: &str = data[1];
@@ -123,7 +121,6 @@ fn main() {
         for (subnet, value) in map_subnet.iter_mut() {
             let mut is_all_failure: bool = true;
             for (_ip, status) in value.0.iter() {
-                println!("{} {}", subnet, status);
                 if !*status {
                     is_all_failure = false;
                     break;
@@ -142,16 +139,15 @@ fn main() {
                 }
             }
         }
-        println!("{:?}", map_subnet);
     }
     map_response_time.iter().for_each(|(key, value)| {
         if value.3 {
             log2.push_str(&format!("{} {}~{}\n", key, value.0, value.4));
         }
     });
-
-    println!("{:?}", map_timeout);
-    println!("\n");
+    
+    println!("{:?}\n", map_subnet);
+    println!("{:?}\n", map_timeout);
     println!("{}", log1);
     println!("{}", log2);
     println!("{}", log3);
