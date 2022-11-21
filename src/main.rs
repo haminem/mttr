@@ -94,7 +94,7 @@ fn main() {
                         let average: u32 = sum / response_time_average_range;
                         if average >= response_time_average_capacity {
                             if !value.3 {
-                                value.0 = value.4.clone();
+                                value.0 = check_date.to_string();
                             }
                             value.3 = true;
                         }
