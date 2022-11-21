@@ -4,6 +4,17 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::net::Ipv4Addr;
 
+// date is a string in the format "YYYYMMDDHHMMSS"
+fn formatter(date: &String) -> String {
+    let year = &date[0..4];
+    let month = &date[4..6];
+    let day = &date[6..8];
+    let hour = &date[8..10];
+    let minute = &date[10..12];
+    let second = &date[12..14];
+    format!("{}/{}/{} {}:{}:{}", year, month, day, hour, minute, second)
+}
+
 fn get_subnet(ip_address: &str) -> String {
     let data: Vec<&str> = ip_address.split("/").collect::<Vec<&str>>();
     let ip: Ipv4Addr = data[0].parse().unwrap();
@@ -32,16 +43,19 @@ fn main() {
     let mut map_response_time: HashMap<String, (String, u32, VecDeque<u32>, bool, String)> =
         HashMap::new();
     //map_subnet is HashMap<subnet, (map_ip, subnet_timeout_reason, subnet_timeout_reason)>
-
     let mut map_subnet: HashMap<String, (HashMap<String, bool>, String, String)> = HashMap::new();
+
     let mut log1: String = String::new();
     let mut log2: String = String::new();
     let mut log3: String = String::new();
-    let mut log1_file: File = File::create("result/log1.txt").expect("ログファイル１が作成できません");
-    let mut log2_file: File = File::create("result/log2.txt").expect("ログファイル２が作成できません");
-    let mut log3_file: File = File::create("result/log3.txt").expect("ログファイル３が作成できません");
+    let mut log1_file: File =
+        File::create("result/log1.txt").expect("Unable to create file log1.txt");
+    let mut log2_file: File =
+        File::create("result/log2.txt").expect("Unable to create file log2.txt");
+    let mut log3_file: File =
+        File::create("result/log3.txt").expect("Unable to create file log3.txt");
 
-    let f: File = File::open(filename).expect("ファイルが見つかりません");
+    let f: File = File::open(filename).expect("Unable to open file");
     let reader: BufReader<File> = BufReader::new(f);
     for line in reader.lines() {
         let line: String = line.unwrap();
@@ -54,7 +68,7 @@ fn main() {
             .insert(ip_address.to_string(), false);
     }
 
-    let f: File = File::open(filename).expect("ファイルが見つかりません");
+    let f: File = File::open(filename).expect("Unable to open file");
     let reader: BufReader<File> = BufReader::new(f);
     for line in reader.lines() {
         let line: String = line.unwrap();
@@ -80,7 +94,12 @@ fn main() {
                 .entry(ip_address.to_string())
                 .and_modify(|value: &mut (String, u32)| {
                     if value.1 >= redundant {
-                        log1.push_str(&format!("{} {}~{}\n", ip_address, value.0, check_date));
+                        log1.push_str(&format!(
+                            "{} {} ~ {}\n",
+                            ip_address,
+                            formatter(&value.0),
+                            formatter(&check_date.to_string())
+                        ));
                     }
                     value.1 = 0;
                 });
@@ -102,7 +121,12 @@ fn main() {
                             value.3 = true;
                         }
                         if average < response_time_average_capacity && value.3 {
-                            log2.push_str(&format!("{} {}~{}\n", ip_address, value.0, value.4));
+                            log2.push_str(&format!(
+                                "{} {} ~ {}\n",
+                                ip_address,
+                                formatter(&value.0),
+                                formatter(&value.4)
+                            ));
                             value.3 = false;
                         }
                         value.4 = check_date.to_string();
@@ -121,6 +145,7 @@ fn main() {
                 .0
                 .insert(ip_address.to_string(), false);
         }
+        //check subnet timeout
         for (subnet, value) in map_subnet.iter_mut() {
             let mut is_all_failure: bool = true;
             for (_ip, status) in value.0.iter() {
@@ -136,7 +161,12 @@ fn main() {
                 value.2 = check_date.to_string();
             } else {
                 if value.1 != "" {
-                    log3.push_str(&format!("{} {}~{}\n", subnet, value.1, value.2));
+                    log3.push_str(&format!(
+                        "{} {} ~ {}\n",
+                        subnet,
+                        formatter(&value.1),
+                        formatter(&value.2)
+                    ));
                     value.1 = String::new();
                     value.2 = String::new();
                 }
@@ -145,19 +175,21 @@ fn main() {
     }
     map_response_time.iter().for_each(|(key, value)| {
         if value.3 {
-            log2.push_str(&format!("{} {}~{}\n", key, value.0, value.4));
+            log2.push_str(&format!(
+                "{} {} ~ {}\n",
+                key,
+                formatter(&value.0),
+                formatter(&value.4)
+            ));
         }
     });
-    //write to log1.txt
     log1_file
         .write_all(log1.as_bytes())
-        .expect("ログファイル1に書き込めません");
-    //write to log2.txt
+        .expect("Unable to write data to log1.txt");
     log2_file
         .write_all(log2.as_bytes())
-        .expect("ログファイル2に書き込めません");
-    //write to log3.txt
+        .expect("Unable to write data to log2.txt");
     log3_file
         .write_all(log3.as_bytes())
-        .expect("ログファイル3に書き込めません");
+        .expect("Unable to write data to log3.txt");
 }
