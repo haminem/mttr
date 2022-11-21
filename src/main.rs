@@ -172,7 +172,21 @@ fn main() {
                 }
             }
         }
+        //response_time_average_range is 1
+        if response_time_average_range == 1 {
+            map_response_time.entry(ip_address.to_string()).and_modify(
+                |value: &mut (String, u32, VecDeque<u32>, bool, String)| {
+                    if response_time.parse::<u32>().unwrap() >= response_time_average_capacity {
+                        if !value.3 {
+                            value.0 = check_date.to_string();
+                        }
+                        value.3 = true;
+                    }
+                },
+            );
+        }
     }
+    //end term timeout of response_time
     map_response_time.iter().for_each(|(key, value)| {
         if value.3 {
             log2.push_str(&format!(
